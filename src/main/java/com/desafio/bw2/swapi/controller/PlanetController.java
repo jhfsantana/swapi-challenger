@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.*;
 import javax.validation.Valid;
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
@@ -26,36 +27,42 @@ public class PlanetController extends BaseController {
     @GetMapping(value = {"", "/{q}"}, produces=MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<HashMap> index(@PathVariable(required = false) String q,
                                 @RequestParam(value = "page", required=false) Integer page) {
-        HashMap response = new HashMap<>();
+        try {
+            HashMap response = new HashMap<>();
 
-        if(q == null) {
+            if(q == null) {
 
-            Page<Planet> planets = planetService.getPlanets(page);
-            response.put("data", planets.getContent());
-            response.put("count", planets.getTotalElements());
+                Page<Planet> planets = planetService.getPlanets(page);
+                response.put("data", planets.getContent());
+                response.put("count", planets.getTotalElements());
 
-            if(planets.hasNext())
-                response.put("next", "/api/v1/planets?page="+(planets.getPageable().getPageNumber()+2));
+                if(planets.hasNext())
+                    response.put("next", "/api/v1/planets?page="+(planets.getPageable().getPageNumber()+2));
 
-        } else {
-
-            Optional<Planet> planet = planetService.findById(q);
-
-            if(planet.isPresent()) {
-                response.put("data", planet);
             } else {
-                response.put("data", planetService.findAllByName(q));
-            }
-        }
 
-        return ResponseEntity.ok().body(response);
+                Optional<Planet> planet = planetService.findById(q);
+
+                if(planet.isPresent()) {
+                    response.put("data", planet);
+                } else {
+                    response.put("data", planetService.findAllByName(q));
+                }
+            }
+            return ResponseEntity.ok().body(response);
+        } catch (Exception e) {
+            return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
     }
 
-
     @PostMapping(value = {""}, produces=MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<Planet> create( @RequestBody @Valid Planet planet) throws IOException {
-        Planet planetCreated = planetService.create(planet);
-        return ResponseEntity.ok().body(planetCreated);
+    public ResponseEntity<Planet> create( @RequestBody @Valid Planet planet) {
+        try {
+            Planet planetCreated = planetService.create(planet);
+            return ResponseEntity.ok().body(planetCreated);
+        } catch (Exception e) {
+            return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
     }
 
     @DeleteMapping(value = "/{id}")
